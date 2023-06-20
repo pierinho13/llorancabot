@@ -7,3 +7,7 @@ info edit: https://script.google.com/u/1/home/projects/17YRQ5E7Bywq9MV5T0FWiD5F-
 
 
 para deployar ir a API google chat api -> configuration y pegar el ID que haz deployado
+
+
+API KEY: AIzaSyC9utzp6PZ5DwY7Bkf3cN960tHPCDuW1AQ
+AIzaSyB4G7rYzhKiJzaoglJZHLU1ZNDbg4Al-Qs

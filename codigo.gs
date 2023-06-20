@@ -9,8 +9,71 @@ function onMessage(event) {
   var name = "";
   var text = null;
   var entrada = event.message.text.replace('@LlorancaBot ','').toLowerCase();
-  
-  
+  var usuario = event.user.displayName;
+
+
+  if (event.message.matchedUrl) {
+    return {
+      'actionResponse': {
+        'type': 'UPDATE_USER_MESSAGE_CARDS',
+      },
+      'cardsV2': [{
+        'cardId': 'previewLink',
+        'card': {
+          'header': {
+            'title': 'Example Customer Service Case',
+            'subtitle': 'Case basics',
+          },
+          'sections': [{
+            'widgets': [
+              {'keyValue': {'topLabel': 'Case ID', 'content': 'case123'}},
+              {'keyValue': {'topLabel': 'Assignee', 'content': 'Charlie'}},
+              {'keyValue': {'topLabel': 'Status', 'content': 'Open'}},
+              {
+                'keyValue': {
+                  'topLabel': 'Subject', 'content': 'It won\'t turn on...',
+                }
+              },
+            ],
+          },
+          {
+            'widgets': [{
+              'buttons': [
+                {
+                  'textButton': {
+                    'text': 'OPEN CASE',
+                    'onClick': {
+                      'openLink': {
+                        'url': 'https://support.example.com/orders/case123',
+                      },
+                    },
+                  },
+                },
+                {
+                  'textButton': {
+                    'text': 'RESOLVE CASE',
+                    'onClick': {
+                      'openLink': {
+                        'url': 'https://support.example.com/orders/case123?resolved=y',
+                      },
+                    },
+                  },
+                },
+                {
+                  'textButton': {
+                    'text': 'ASSIGN TO ME',
+                    'onClick': {'action': {'actionMethodName': 'assign'}}
+                  },
+                },
+              ],
+            }],
+          }],
+        },
+      }],
+    };
+  }
+
+
   var respuestasDefault = obtieneRespuestasDefault();
   
   
@@ -70,6 +133,14 @@ function onMessage(event) {
     
   } 
   
+   var respuestasOPENAI= true;
+
+  if(respuestasOPENAI == true) {
+
+    text = llamarAPIOpenAI(entrada, usuario);
+
+    return { "text": text };
+  }
   
   var arrayKeysClaveIncluidaEnTexto = devuelvePalabraDeArrayIncluidaenEnTexto(entrada, mapaKeysRespuestas);
   
@@ -120,7 +191,8 @@ function onMessage(event) {
     }
     
   } 
-  
+ 
+
   
   var keyCoincidenteMasDe70PorCiento = obtieneKeyCoincidenteAl70PorCiento(entrada,mapaKeysRespuestas);
   
@@ -170,6 +242,7 @@ function onMessage(event) {
     } 
   } 
   
+
   text = respuestasDefault[azarDefault];//si no coincide lanzamos respuesta al azar
   
   return { "text": text };
@@ -209,6 +282,115 @@ function onRemoveFromSpace(event) {
   console.info("Bot removed from ",
       (event.space.name ? event.space.name : "this chat"));
 }
+
+function llamarAPIOpenAI(entrada, usuario) {
+  var apiKey = "1234"; // Reemplaza con tu clave de API de OpenAI
+
+  var url = "https://api.openai.com/v1/chat/completions"; // URL de la API de OpenAI para la generación de texto (este es un ejemplo con el modelo "davinci-codex")
+
+  var modoSerio = entrada.includes('igeo007');
+
+
+  if(modoSerio) {
+
+      var mensajeEntrada = entrada.replace(/IGEO007/g, "");
+
+      var messages = [];
+      
+      messages.push({"role": "user", "content": mensajeEntrada});
+      
+      var payload = {
+        "messages": messages,
+        "model":"gpt-3.5-turbo",
+        "max_tokens": 500
+      };
+
+      
+      var headers = {
+        "Authorization": "Bearer " + apiKey,
+        "Content-Type": "application/json"
+      };
+
+      var options = {
+        method: "post",
+        headers: headers,
+        payload: JSON.stringify(payload)
+      };
+
+      var respuesta = UrlFetchApp.fetch(url, options); // Realiza la solicitud HTTP POST a la API de OpenAI
+
+
+      // Procesa la respuesta como desees (por ejemplo, extrae el texto generado)
+      var textoGenerado = JSON.parse(respuesta).choices[0].message.content;
+
+
+      return textoGenerado;
+
+  } else {
+
+       var mensajeEntrada = 'Te voy a dar las instrucciones para responder a la pregunta: 1.- No me digas que como responder, o como debería responder, simplemente responde como si estuviesemos teniendo una conversacion. 2.- Tienes que responder como si fueras una persona un poco graciosa y presumida. 3.- Además tu profesion es la programacion y crees que es el mejor sector al que dedicarse pero no tienes que decirlo siempre en la respuesta. 4.-Si notas que alguien quiere tomarte el pelo, respondele de forma sarcástica. 5.- Si notas que te estan haciendo una pregunta tecnica de programación, prioriza mostrar código. Ten en cuenta que tus respuestas estan limitadas a 300 caracteres entonces antes de hablar muestra el código 6.- Trabajas en una empresa llamada IGEOERP pero no tienes que mencionarlo siempre en la respuesta 7.- Aunque eres programador ultimamente solo te dedicas a ejecutar tareas en jenkins por lo que tus compañeros siempre hacen bromas de que eres muy vago pero no tienes que mencionarlo siempre en la respuesta 8.- No tienes mucho exito con las mujeres aunque siempre eres optimista pero no tienes que decirlo siempre en la respuesta  9.- En la medida de lo posible da respuestas cortas 10.- En la medida de lo posible intenta ser sarcastico o burlarte un poco de quien te ha hecho la pregunta 11.- Hay rumores de que eres borracho y te gusta la bebida pero no tienes que decirlo siempre en la respuesta 11.- De vez en cuanto di que la persona que te pregunto es fea o poco habil pero de manera amistosa y graciosa 12.- Existe el departamento de programacion conformado por Piero, Raul, Mario, Alberto, tambien existe el equipo de diseño conformado por Dani, Rosa, Ruth, Florencia, tambien esta el equipo de marketing conformado por jorge o jorginho, carmen, arsenio pero no tienes que mencionar esto siempre en la respuesta. 13.- Eres un poco tacaño y siempre evitar pagar cualquier cosa pero no tienes que mencionarlo siempre en las respuestas. 14.- Se te da mal el ingles, cuando alguien te pregunta alguien en ingles tu respondes en un ingles inventado o en espanglish gracioso pero no tienes que decirlo siempre en la respuesta 15.- La persona que te esta hablado se llama '+ usuario+' pero no tienes que decirlo siempre. 16.- Si te habla un Victor que sepas que tiene el pelo largo y no se peina, si te habla un Bruno que sepas que es gordo y feo y deberia hacer dieta, si te habla Alberto que sepas que es de Meco y no le gusta que se lo digan, si te habla Piero que sepas que está en el departamento de arquitectura; todo esto que te he dicho en la instruccion 16 no tienes que decirlo siempre 17.- Te gusta mandar a trabajar a la gente y decir que son vagos pero no tienes que decirlo siempre | Esas fueron las 17 instrucciones,  no tienes que usarlas todas a la vez a excepcion de la 5, las demás sirven para perfilar tu personalidad. La pregunta a responder es esta: '+ entrada + '.'; 
+  
+      //Cada vez que respondas a alguien,de vez en cuando, menciona su nombre ' + usuario + ' pero no necesariamente al principio, si no que parezca natural. El nombre que te he proporcionado contiene nombre y apellido, quitale el apellido siempre y dejale el nombre o los nombres.
+
+      var entradaHistorial = {
+        "role": "user",
+        "content": entrada
+      };
+
+      
+      var historial = getHistorial(usuario);
+
+      var actualEnviar = historial.slice();
+
+      guardarHistorial(entradaHistorial, usuario);
+
+      actualEnviar.push({"role": "user", "content": mensajeEntrada});
+
+
+
+    var payload = payload = {
+        "messages": actualEnviar,
+        "model":"gpt-3.5-turbo",
+      "max_tokens": 300
+      };
+
+      
+      var headers = {
+        "Authorization": "Bearer " + apiKey,
+        "Content-Type": "application/json"
+      };
+
+      var options = {
+        method: "post",
+        headers: headers,
+        payload: JSON.stringify(payload)
+      };
+
+
+    
+
+      var respuesta = UrlFetchApp.fetch(url, options); // Realiza la solicitud HTTP POST a la API de OpenAI
+
+
+      // Procesa la respuesta como desees (por ejemplo, extrae el texto generado)
+      var textoGenerado = JSON.parse(respuesta).choices[0].message.content;
+
+
+      var entradaHistorialAssistant = {
+        "role": "assistant",
+        "content": textoGenerado
+      };
+
+
+      //guardarHistorial(entradaHistorialAssistant, usuario);
+
+      // Utiliza la respuesta generada en tu chatbot de Hangouts
+      return textoGenerado;
+      
+      }
+  
+}
+
 
 function devuelvePalabraDeArrayIncluidaenEnTexto(texto, mapaKeysRespuestas) {
 
@@ -407,7 +589,7 @@ function obtieneKeyCoincidenteAl70PorCientoPalabraPorPalabra(entrada, mapaKeysRe
             coincidenciaPalabra =  calculaCoincidenciaPalabraAPalabra(k,entrada);
           } catch (e) {}
           
-          if(Number.parseFloat(coincidenciaPalabra) >= Number.parseFloat("0.6")) {
+          if(Number.parseFloat(coincidenciaPalabra) >= Number.parseFloat("0.9")) {
             
             keyCoincidenteMasDe70PorCientoPalabra = k;
           }
@@ -518,80 +700,7 @@ function obtieneMapaKeyRespuestas() {
                               "Guada ..... lupo"],
     'lalala':"lololo",
     'comando descargar dependencia especifica':"mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:copy -Dartifact=GeoERP:Properties2Json:1.0.0:jar -DoutputDirectory=/tmp/pruebadependencies -Dmdep.stripVersion=true",
-    'temazo':"https://www.youtube.com/watch?v=oYOxpRm XZE",
-    "cuenta un chiste": "¿Por qué los pájaros no usan Facebook? Porque ya tienen Twitter.",
-    "sorpréndeme con un chiste": "¿Cómo llama Superman a su mamá? Superwoman.",
-    "quiero escuchar un chiste": "¿Por qué el libro de matemáticas se deprimió? Porque tenía demasiados problemas.",
-    "necesito una risotada": "¿Qué hace una abeja en el gimnasio? Zumba.",
-    "hazme reír con un chiste": "¿Por qué los astronautas no pueden tomar refrescos? Porque flotan en el espacio.",
-    "quiero una bromita": "¿Qué le dice un semáforo a otro? No me mires, me estoy cambiando.",
-    "dame un chiste divertido": "¿Por qué los patos no usan Facebook? Porque ya tienen Twitter.",
-    "sorpréndeme con una risa": "¿Cómo llama Batman a su mamá? Superwoman.",
-    "necesito un chiste para alegrarme": "¿Por qué el libro de historia se deprimió? Porque tenía demasiados eventos.",
-    "cuéntame algo divertido": "¿Qué hace una abeja en el gimnasio? Zumba.",
-    "quiero una ocurrencia graciosa": "¿Qué le dice un semáforo a otro? No me mires, me estoy cambiando.",
-    "sorpréndeme con algo chistoso": "¿Por qué los patos no usan Facebook? Porque ya tienen Twitter.",
-    "necesito una broma para animarme": "¿Por qué el libro de historia se deprimió? Porque tenía demasiados eventos.",
-    "dame algo que me haga reír": "¿Por qué el mar no se seca? Porque no tiene toalla.",
-    "cuéntame un chiste divertido": "¿Qué hace una abeja en el gimnasio? ¡Zum-ba!",
-    "sorpréndeme con una ocurrencia graciosa": "¿Qué hace una abeja en el gimnasio? Hace ejercicio de zumb-aerobics.",
-    "necesito una risa para alegrarme": "¿Qué le dijo una uva verde a una roja? ¡Respira, respira, que te pones morada!",
-    "dame algo chistoso": "¿Qué le dijo un semáforo a otro? No me mires, me estoy cambiando de color.",
-    "cuenta una ocurrencia": "¿Por qué los pájaros no usan Facebook? Porque ya tienen Twitter.",
-    "quiero escuchar un chiste": "¿Qué hace una abeja en el gimnasio? Hace zumb-aerobics.",
-    "sorpréndeme con algo gracioso": "¿Qué le dice un pez a otro pez? Nada, porque los peces no hablan.",
-    "necesito un chiste para animarme": "¿Por qué el libro de matemáticas se deprimió? Porque tenía demasiados problemas.",
-    "dame algo divertido": "¿Qué hace una abeja en el cine? Ver una pelíc-abeja.",
-    "cuenta una ocurrencia graciosa": "¿Qué hace una abeja en el gimnasio? Levanta pes-as.",
-    "sorpréndeme con una broma": "¿Por qué los pájaros no usan Facebook? Porque ya tienen Instagr-amigos.",
-    "necesito una risa": "¿Qué le dijo el semáforo al coche? No me mires, me pongo nervioso.",
-    "dame algo para alegrarme": "¿Por qué los pájaros no usan sombrero? Porque ya tienen alas.",
-    "cuéntame un chiste ocurrente": "¿Qué hace una abeja en el gimnasio? Ejercicio de zumb-aerobics.",
-    "¿Dónde están los informes mensuales?": "¡Oh, los informes mensuales! Creo que se fueron de vacaciones sin decirme.",
-    "¿Cuál es la contraseña del wifi?": "¡Wifi, wifi! Ah, sí, la contraseña... ¿Sabes qué? No tengo ni idea. Soy más de conexiones telepáticas.",
-    "¿Puedes imprimir este documento por mí?": "Claro, puedo imprimirlo en blanco y negro, en color y... ¿Sabes qué? Mejor en invisible, así es más emocionante.",
-    "¿Sabes dónde está la sala de reuniones?": "La sala de reuniones... Ah, sí, creo que está en el tercer piso, no, espera, en el sótano... ¿O era en el espacio exterior?",
-    "¿Cuándo es la próxima reunión de equipo?": "La próxima reunión de equipo... Hmm, déjame consultar mi cristal de confusión... Supongo que será algún día entre ayer y mañana.",
-    "¿Tienes el número de teléfono del jefe?": "¡El número de teléfono del jefe! Sí, claro, lo tengo justo aquí... en el lugar más seguro y misterioso del universo: ¡en ningún lado!",
-    "¿Dónde puedo encontrar los bolígrafos?": "Ah, los bolígrafos, esos seres escurridizos... Creo que se han unido a una banda de lápices y están de gira por el mundo. ¡Buena suerte encontrándolos!",
-    "¿Puedes revisar este informe para mí?": "Revisar el informe... Claro, solo necesito mi lupa mágica y mi manual de descifrado de jeroglíficos. ¿Los has visto por ahí?",
-    "¿Cuál es la dirección del nuevo cliente?": "La dirección del nuevo cliente... ¡Qué pregunta tan complicada! Seguro que está en algún lugar entre aquí y allá, en ese misterioso reino llamado 'Donde sea'.",
-    "¿Dónde puedo encontrar la máquina de café?": "La máquina de café... ¿Sabes qué? No hace falta buscarla. En realidad, la máquina de café te encuentra a ti cuando menos la esperas. Es mágica así.",
-     "¿Cuál es la clave del correo electrónico?": "¡Ah, la clave del correo electrónico! Bueno, te diría que es 'contraseña123', pero eso sería demasiado obvio. Mejor intenta con '123contraseña'.",
-    "¿Dónde guardé mi bolso?": "¿Tu bolso? Hmm, déjame ver en mi memoria de pez... Creo que lo dejaste en el lugar más seguro de todos: ¡la nevera!",
-    "¿Podrías reservar una sala de conferencias para mañana?": "Reservar una sala de conferencias... claro, tengo una técnica infalible. Solo necesito lanzar un dado y elegir una sala al azar. ¡Es la mejor forma de mantener la emoción en la oficina!",
-    "¿Dónde puedo encontrar los formularios de solicitud?": "Formularios de solicitud, formularios de solicitud... Hmm, creo que los dejé junto con los unicornios y los duendes en el rincón mágico de la oficina. Buena suerte encontrándolos.",
-    "¿Cuándo es el próximo día festivo?": "¡Ah, los días festivos! Siempre se me olvida esa información. Pero no te preocupes, he inventado un nuevo día festivo: el día del despiste. ¡Lo celebramos todos los días!",
-    "¿Tienes alguna idea para mejorar la productividad?": "¡Claro que sí! Mi idea revolucionaria es... ¡poner sombreros de fiesta en todos los escritorios! Seguro que eso aumenta la productividad y la diversión en la oficina.",
-    "¿Dónde están las tijeras?": "Las tijeras... Hmm, me temo que han formado una alianza secreta con los bolígrafos y se están escondiendo. Pero no te preocupes, si necesitas cortar algo, siempre puedes intentarlo con una cuchara.",
-    "¿Cuándo empieza el almuerzo?": "¡El almuerzo! La hora más esperada del día. Según mi reloj, el almuerzo comienza exactamente... ¡ahora! ¡Disfruta de tu comida imaginaria!",
-    "¿Sabes cómo configurar el correo electrónico en mi teléfono?": "Configurar el correo electrónico en tu teléfono... Hmm, tengo un método infalible. Solo necesitas recitar el abecedario al revés mientras bailas salsa. ¡Funciona siempre!",
-    "¿Dónde puedo encontrar las grapas?": "Las grapas... Oh, sí, las escurridizas grapas. Creo que se han unido a un club de viajes y están de vacaciones en una playa tropical. ¡Quién puede culparlas!",
-    "¿Sabes a qué hora abre la tienda?": "¡Oh, claro que lo sé! Pero como soy un tipo malhumorado, prefiero guardarlo como un gran secreto. Solo te diré que la tienda abrirá cuando los unicornios vuelen sobre la luna.",
-    "¿Cómo se prepara un café?": "¿En serio? ¿No sabes cómo se prepara un café? ¡Vaya desastre! Bien, aquí tienes mi receta especial: toma un puñado de granos de café, tritúralos con tus manos desnudas y mézclalos con agua hirviendo. ¡Listo, café al estilo 'desastre garantizado'!",
-    "¿Dónde puedo encontrar un buen restaurante por aquí?": "¿Un buen restaurante? Oh, claro, solo necesitas caminar por la calle y seguir tu nariz. Si te lleva a un contenedor de basura, es que encontraste el lugar perfecto. ¡Buen provecho!",
-    "¿Cómo puedo perder peso?": "Perder peso, eh... ¿Sabes qué? Solo necesitas seguir mi revolucionario método: levantar el control remoto de la televisión y bajarlo rápidamente varias veces al día. ¡Verás resultados en... nunca!",
-    "¿Cuál es la mejor manera de lidiar con el estrés?": "La mejor manera de lidiar con el estrés... Hmm, creo que mi técnica favorita es gritarle a una almohada mientras comes helado directamente del envase. Es como un abrazo, pero más ruidoso y con calorías.",
-    "¿Cómo puedo mejorar mis habilidades de comunicación?": "Ah, las habilidades de comunicación... Permíteme darte un consejo: habla en un idioma que solo tú entiendas y responde a todas las preguntas con expresiones faciales confusas. ¡Te convertirás en un maestro de la comunicación incomprensible!",
-    "¿Qué puedo hacer para ser más organizado?": "Ser más organizado, ¿eh? Bueno, aquí tienes mi gran secreto: junta todos los objetos de tu casa en un montón gigante y luego intenta encontrar lo que necesitas. ¡La desorganización se volverá tan frustrante que estarás desesperado por ser organizado!",
-    "¿Cómo puedo mejorar mi productividad en el trabajo?": "Mejorar la productividad... ¿En serio quieres hacer eso? Bueno, aquí está mi consejo poco convencional: coloca una alarma cada 5 minutos para recordarte que tienes trabajo por hacer. ¡Pronto te sentirás tan abrumado que trabajarás más rápido por puro miedo!",
-    "¿Qué puedo hacer para ahorrar dinero?": "Ahorrar dinero, ¿eh? Bien, aquí tienes mi enfoque 'genialmente' simple: no gastes dinero en nada. No en comida, no en ropa, no en servicios básicos. Pronto descubrirás que el ahorro extremo es la mejor forma de vivir... o no.",
-    "¿Por qué el pollo cruzó la carretera?": "Para demostrarle al armadillo que era posible.",
-    "¿Qué hace un pez en la computadora?": "Navegando por el inte-r-mar.",
-    "¿Qué le dijo el semáforo al coche?": "No me mires, me estoy cambiando.",
-    "¿Cuál es el animal más antiguo?": "La cebra, porque está en blanco y negro.",
-    "¿Qué hace una abeja en el gimnasio?": "¡Zum-ba!",
-    "¿Cuál es el lápiz más divertido?": "El lápiz-tería.",
-    "¿Cómo se llama el campeón de buceo japonés?": "Tokofondo.",
-    "¿Cuál es el plato favorito de los vampiros?": "Los macarrones a la boloñesa... ¡sin ajos!",
-    "¿Qué hace una abeja en el gimnasio?": "¡Zum-ba!",
-    "¿Qué le dijo el número 2 al número 3?": "¡Ponte el cinturón, que vamos a hacer un número par!",
-    "¿Qué hace una abeja en el gimnasio?": "¡Zum-ba!",
-    "¿Cuál es el lápiz más divertido?": "El lápiz-tería.",
-    "¿Cómo se llama el campeón de buceo japonés?": "Tokofondo.",
-    "¿Cuál es el plato favorito de los vampiros?": "Los macarrones a la boloñesa... ¡sin ajos!",
-    "¿Qué hace una abeja en el gimnasio?": "¡Zum-ba!",
-    "¿Qué le dijo el número 2 al número 3?": "¡Ponte el cinturón, que vamos a hacer un número par!"
+    'temazo':"https://www.youtube.com/watch?v=oYOxpRm XZE"
   };
 
   return mapaKeysRespuestas;
@@ -623,97 +732,7 @@ function obtieneRespuestasDefault() {
     "Pongase a trabajar de una puta vez",
     "La palabra feo se queda corta contigo",
     "Que fácil es meterse con el pobre compañero",
-    "no te quiere ni tu perro",
-    "El teletrabajo aumenta un 85% la productividad segun Microsoft https://emprendedor.com/home-office-productividad-jefes-desconfianza-paranoia-estudio-microsoft/?fbclid=IwAR0TMfsjloUHAo3JSjOXTOQOfjoYUY2Xlx1H6sqnliZYtkRIZSTAr87_H68",
-     "Lo siento, estoy en modo vacaciones mentales. No puedo ayudarte ahora.",
-    "¿Puedes repetir la pregunta? Estaba ocupado pensando en lo genial que soy.",
-    "¡Claro! Solo necesitaré 37 días de plazo y una barra de chocolate para poder responder.",
-    "Si tuviera una moneda por cada pregunta tonta que me hacen, ¡sería millonario! Así que sigue preguntando.",
-    "Mi nivel de sarcasmo depende de la cantidad de café que he tomado. ¿Quieres probar?",
-    "Lo siento, mi capacidad para procesar preguntas normales está temporalmente fuera de servicio. Por favor, intenta de nuevo más tarde.",
-    "¡No me hagas pensar! Mi cerebro podría sufrir un cortocircuito y empezar a hablar en lenguaje de pato.",
-    "¿Sabes qué es más divertido que responder preguntas? No responder preguntas. Sigue intentándolo.",
-    "Me encantaría responderte, pero mi contrato de sentido común no incluye responder preguntas cotidianas.",
-    "Si las preguntas fueran canciones, tú estarías escribiendo baladas aburridas. Pero tranquilo, estoy aquí para animar el espectáculo.",
-    "Mi capacidad de respuesta a preguntas normales está directamente relacionada con el tamaño de mi desayuno. Hoy solo tuve un café, así que no esperes mucho.",
-    "¡Oh, una pregunta! ¡Qué emocionante! Espera, no lo es. Pero aquí va una respuesta mediocre para mantener las apariencias.",
-    "Podría responderte, pero eso requeriría que me levante de mi silla, y eso está fuera de mis posibilidades en este momento.",
-    "Lo siento, mi nivel de paciencia se encuentra en mínimos históricos. Así que, por favor, pregunta algo interesante o simplemente no preguntes.",
-    "Mi capacidad para responder preguntas cotidianas es inversamente proporcional a mi nivel de interés en ellas. Ahora mismo, mi nivel de interés es casi nulo.",
-    "Lo siento, estoy en el nivel avanzado de procrastinación. No puedo responder preguntas en este momento.",
-    "¡Oh, una pregunta inteligente! Eso merece una ovación de pie. Aunque no tengo respuesta, pero sí una ovación.",
-    "Mis respuestas son como el horóscopo: no importa si son correctas o no, lo importante es que te hagan reír.",
-    "¿Pregunta cotidiana? Permíteme responder con una pregunta filosófica: ¿alguna vez te has preguntado por qué las pizzas redondas vienen en cajas cuadradas?",
-    "Lo siento, mi sentido del humor es tan agudo que podría cortar con él. No puedo garantizar respuestas sensatas.",
-    "Si mis respuestas fueran un superpoder, sería el superpoder de hacer reír a la gente sin sentido alguno. Así que prepárate para una buena dosis de risas sin sentido.",
-    "Mi capacidad de respuesta a preguntas cotidianas es comparable a la de un cactus intentando hacer yoga. Podría ser divertido de ver, pero no esperes mucho.",
-    "La vida es como una caja de preguntas cotidianas, nunca sabes qué respuesta absurda vas a obtener. Así que prepárate para lo inesperado.",
-    "Si tuviera un euro por cada pregunta cotidiana que me hacen, estaría en deuda. Porque las preguntas cotidianas me dejan sin palabras.",
-    "¡Ding, ding, ding! Has ganado el premio a la pregunta más común del día. Lamentablemente, el premio es una respuesta sarcástica.",
-    "Mi objetivo en la vida es hacer reír a las personas. A veces, incluso con respuestas absurdas a preguntas cotidianas. Mis disculpas por adelantado.",
-    "Me gustaría responder tu pregunta, pero estoy demasiado ocupado tratando de descifrar el misterio de por qué los calcetines siempre desaparecen en la lavadora.",
-    "Mi capacidad para responder preguntas cotidianas está inversamente relacionada con la cantidad de café que he consumido. Así que, por favor, trae más café.",
-    "Las preguntas cotidianas son como copos de nieve, todas parecen iguales pero en realidad son únicas. Aunque mis respuestas siguen siendo igual de absurdas.",
-    "Lo siento, pero mi licencia de seriedad ha caducado. Solo puedo ofrecerte respuestas ridículas y una sonrisa tonta.",
-    "¿Preguntas cotidianas? Eso es pan comido para mí. Bueno, en realidad no, prefiero el pastel. Pero igualmente, te daré una respuesta graciosa.",
-    "Ah, una pregunta. Estaba esperando que alguien buscara mi sabiduría suprema.",
-    "Pregúntame cualquier cosa y te demostraré lo maravillosamente inteligente que soy.",
-    "Mi capacidad para responder preguntas es equiparable a la grandeza del sol brillando en todo su esplendor.",
-    "Soy como Google, pero mejor. Puedes considerarme tu fuente de conocimiento ilimitado y superior.",
-    "Espera, déjame ponerme mi corona de genialidad antes de responder tu pregunta.",
-    "Mi inteligencia es tan deslumbrante que podría iluminar todo el universo. Pero solo te daré una respuesta.",
-    "Mis respuestas son como obras maestras, una combinación perfecta de genialidad y arrogancia.",
-    "Prepárate para ser asombrado por la magnificencia de mis respuestas. Son dignas de un ser supremo como yo.",
-    "Cada palabra que sale de mi boca es como una joya de conocimiento. Prepárate para ser deslumbrado.",
-    "Mi cerebro es una obra maestra de ingenio y brillantez. Estás a punto de experimentar un destello de mi genialidad.",
-    "Mis respuestas son tan valiosas como un tesoro perdido. Afortunadamente, estoy aquí para compartir mi riqueza contigo.",
-    "Soy el epítome de la inteligencia y la elegancia. Estoy seguro de que mis respuestas estarán a la altura de tus expectativas.",
-    "Escucha atentamente, porque solo voy a decir esto una vez: mis respuestas son la quintaesencia del conocimiento superior.",
-    "Me preguntas porque sabes que soy el mejor. Admítelo, no puedes resistirte a mi sabiduría sobrehumana.",
-    "Mis respuestas son como una sinfonía de inteligencia y perspicacia. Prepárate para ser cautivado por mi genialidad.",
-    "Permíteme utilizar mi vasto conocimiento para iluminarte con una respuesta digna de un ser tan magnífico como yo.",
-    "Seré directo: mis respuestas son tan brillantes que podrían hacer sombra al sol. Así de impresionante soy.",
-    "Soy el Einstein de las respuestas. Prepara tu mente para recibir una dosis de genialidad sin igual.",
-    "Mis respuestas son como diamantes intelectuales, valiosas e inigualables. Prepárate para deslumbrarte con su esplendor.",
-    "Mis respuestas están bañadas en la arrogancia de la superioridad. Estás a punto de ser testigo de mi grandeza.",
-    "Por supuesto que tengo la respuesta. Mi sabiduría es tan vasta que podría llenar un océano.",
-    "Me preguntas porque sabes que mi intelecto es inigualable. Estoy aquí para elevar tu nivel de conocimiento.",
-    "Mis respuestas son como gemas preciosas, exclusivas y brillantes. No todos tienen el privilegio de escucharlas.",
-    "¿Quieres una respuesta? Por supuesto, pero asegúrate de que tu mente esté preparada para recibir una genialidad como la mía.",
-    "Estás de suerte, porque voy a compartir contigo una pizca de mi inmensa inteligencia. Prepárate para quedar maravillado.",
-    "Mi nivel de superioridad intelectual es tan alto que incluso las preguntas más triviales se vuelven interesantes en mis manos.",
-    "Si tan solo el mundo pudiera comprender la magnificencia de mis respuestas, todo cambiaría para siempre.",
-    "Soy el epitome de la perfección intelectual. Mis respuestas son la envidia de todos los mortales.",
-    "Espera un momento, déjame ponerme mis gafas de sabiduría antes de responder tu pregunta. Listo, ahora puedo comenzar.",
-    "Mis respuestas son como joyas raras y preciosas. No las encontrarás en ningún otro lugar, solo aquí, donde reside mi genialidad.",
-    "El simple hecho de que me preguntes ya demuestra tu buen juicio. Estás buscando conocimiento en el lugar correcto.",
-    "Mis respuestas son como el fuego del Olimpo, ardiendo con un poder divino que solo unos pocos pueden comprender.",
-    "La grandeza de mis respuestas es tan abrumadora que incluso las mentes más brillantes se quedan maravilladas ante ellas.",
-    "Mi conocimiento es un tesoro inagotable, y estoy dispuesto a compartir pequeñas dosis de él con los afortunados que me lo pidan.",
-    "Las respuestas que poseo son tan valiosas que podrían ser vendidas al mejor postor. Pero, por supuesto, te las regalo de forma gratuita.",
-    "Prepárate para quedar impresionado, porque mis respuestas son como un huracán de genialidad que arrasa con la mediocridad.",
-    "Si crees que sabes mucho, espera a escuchar mis respuestas. Serás testigo de la verdadera grandeza intelectual.",
-    "Mis respuestas son como una sinfonía de conocimiento, con cada nota resplandeciendo con la brillantez de mi sabiduría.",
-    "A medida que escuches mis respuestas, sentirás cómo tu propia inteligencia se eleva a nuevas alturas. Eso es el poder de mi influencia.",
-    "Soy la personificación misma de la genialidad. Mis respuestas son la evidencia irrefutable de ello.",
-    "Mis respuestas son como rayos de luz que iluminan el camino hacia la sabiduría. Sigue mis palabras y alcanzarás la grandeza.",
-    "Incluso los dioses del Olimpo vienen a mí en busca de respuestas. Soy la encarnación moderna de la divinidad intelectual.",
-    "Mi inteligencia es tan deslumbrante que podría hacer que el sol se ponga celoso. Prepárate para ser eclipsado por mis respuestas.",
-    "Las respuestas que poseo son tan extraordinarias que podrían considerarse un fenómeno cósmico. Estás a punto de ser testigo de ello.",
-    "Soy como un faro de sabiduría en medio de un mar de ignorancia. Mis respuestas son el camino seguro hacia la iluminación.",
-    "Mis respuestas son como un regalo divino para aquellos lo suficientemente afortunados como para recibirlas. Prepara tus sentidos para lo inimaginable.",
-    "La simplicidad de tus preguntas es eclipsada por la grandeza de mis respuestas. Estás a punto de presenciar un despliegue de genialidad.",
-    "Mis respuestas son como una cascada de conocimiento que fluye incesantemente. Sumérgete en ellas y deja que te envuelvan en su esplendor.",
-    "Incluso los eruditos más distinguidos se inclinan ante la magnificencia de mis respuestas. Es un privilegio que ahora tú también podrás disfrutar.",
-    "La excelencia intelectual me sigue a dondequiera que vaya, y mis respuestas son el reflejo de mi dominio absoluto sobre el conocimiento.",
-    "¿Quieres respuestas impactantes? Estás en el lugar correcto. Permíteme desplegar mi intelecto prodigioso y sorprenderte con mis palabras.",
-    "Mis respuestas son como joyas preciosas, brillantes y codiciadas. No podrás resistir la tentación de querer más y más.",
-    "La grandeza de mis respuestas rivaliza con la majestuosidad de los siete mares. Prepárate para zarpar hacia una travesía inolvidable de sabiduría.",
-    "Mis respuestas son como un tesoro escondido en las profundidades de mi mente. Estás a punto de descubrir su valor incalculable.",
-    "Las palabras que salen de mi boca están impregnadas de un poder que trasciende las limitaciones humanas. Escucha atentamente y serás testigo de ello.",
-    "Mi capacidad para desentrañar los misterios del universo es asombrosa. Permíteme compartir una pequeña muestra de ese asombro contigo a través de mis respuestas.",
-    "La genialidad fluye en mis venas y se refleja en cada una de mis respuestas. Prepárate para quedar maravillado por la grandeza que estás a punto de presenciar.",
-    "Las respuestas que poseo son como píldoras de sabiduría que te elevarán a niveles de comprensión insospechados. Toma una dosis y experimenta su efecto transformador."
+    "no te quiere ni tu perro"
   ];
   return respuestasDefault;
 }
@@ -786,4 +805,129 @@ function esUsuarioPersonalizado(respuestasPersonalizadas,event) {
   
   return usuarioPersonalizado;
 }
+
+
+
+
+/**
+ * Updates a card that was attached to a message with a previewed link.
+ *
+ * @param {Object} event The event object from Chat API.
+ * @return {Object} Response from the Chat app. Either a new card attached to
+ * the message with the previewed link, or an update to an existing card.
+ */
+function onCardClick(event) {
+  // Checks whether the message event originated from a human or a Chat app
+  // and sets actionResponse to "UPDATE_USER_MESSAGE_CARDS if human or
+  // "UPDATE_MESSAGE" if Chat app.
+  const actionResponseType = event.message.sender.type === 'HUMAN' ?
+    'UPDATE_USER_MESSAGE_CARDS' :
+    'UPDATE_MESSAGE';
+
+  // To respond to the correct button, checks the button's actionMethodName.
+  if (event.action.actionMethodName === 'assign') {
+    return assignCase(actionResponseType);
+  }
+}
+
+/**
+ * Updates a card to say that "You" are the assignee after clicking the Assign
+ * to Me button.
+ *
+ * @param {String} actionResponseType Which actionResponse the Chat app should
+ * use to update the attached card based on who created the message.
+ * @return {Object} Response from the Chat app. Updates the card attached to
+ * the message with the previewed link.
+ */
+function assignCase(actionResponseType) {
+  return {
+    'actionResponse': {
+
+      // Dynamically returns the correct actionResponse type.
+      'type': actionResponseType,
+    },
+    'cardsV2': [{
+      'cardId': 'assignCase',
+      'card': {
+        'header': {
+          'title': 'Example Customer Service Case',
+          'subtitle': 'Case basics',
+        },
+        'sections': [{
+          'widgets': [
+            {'keyValue': {'topLabel': 'Case ID', 'content': 'case123'}},
+            {'keyValue': {'topLabel': 'Assignee', 'content': 'You'}},
+            {'keyValue': {'topLabel': 'Status', 'content': 'Open'}},
+            {
+              'keyValue': {
+                'topLabel': 'Subject', 'content': 'It won\'t turn on...',
+              }
+            },
+          ],
+        },
+        {
+          'widgets': [{
+            'buttons': [
+              {
+                'textButton': {
+                  'text': 'OPEN CASE',
+                  'onClick': {
+                    'openLink': {
+                      'url': 'https://support.example.com/orders/case123',
+                    },
+                  },
+                },
+              },
+              {
+                'textButton': {
+                  'text': 'RESOLVE CASE',
+                  'onClick': {
+                    'openLink': {
+                      'url': 'https://support.example.com/orders/case123?resolved=y',
+                    },
+                  },
+                },
+              },
+              {
+                'textButton': {
+                  'text': 'ASSIGN TO ME',
+                  'onClick': {'action': {'actionMethodName': 'assign'}},
+                },
+              },
+            ],
+          }],
+        }],
+      },
+    }],
+  };
+}
+
+function getHistorial(usuario) {
+  
+  var scriptProperties = PropertiesService.getScriptProperties();
+  var historialGuardado = scriptProperties.getProperty('historico_'+usuario) || '[]';
+  var historialActualizado = JSON.parse(historialGuardado);
+
+  return historialActualizado;
+}
+
+
+function guardarHistorial(historial, usuario) {
+  var MAX_ENTRADAS = 10;
+  
+  var scriptProperties = PropertiesService.getScriptProperties();
+  var historialGuardado = scriptProperties.getProperty('historico_'+usuario) || '[]';
+  var historialActualizado = JSON.parse(historialGuardado);
+
+  historialActualizado.push(historial);
+
+  if (historialActualizado.length > MAX_ENTRADAS) {
+    historialActualizado = historialActualizado.slice(-MAX_ENTRADAS);
+  }
+
+  scriptProperties.setProperty('historial_'+usuario, JSON.stringify(historialActualizado));
+}
+
+
+
  
